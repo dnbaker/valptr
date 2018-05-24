@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstdlib>
 
 namespace vpr {
 using std::uint64_t;

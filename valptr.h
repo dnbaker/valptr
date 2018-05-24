@@ -86,32 +86,20 @@ public:
         std::fprintf(stderr, "val before: %llx. zvmask: %llx\n", val_, ZERO_VAL_MASK);
 #endif
         val_ &= ~ZERO_VAL_MASK; // Set val bits to 0.
-#if 0
         uint64_t val64 = static_cast<uint64_t>(val);
         if(val64)
-            val_ |= (val64 << (48 - ALN_LEFTOVERS)) | (static_cast<uint64_t>(val) & ALN_MASK);
-#endif
+            val_ |= ((val64 & ~ALN_MASK) << (48 - ALN_LEFTOVERS)) | (val64 & ALN_MASK);
     }
     void setvalcheck(V val) {
-        if(__builtin_expect(val >= (static_cast<uint64_t>(1) << (ALN_LEFTOVERS + 16)), 0))
+        if(__builtin_expect(static_cast<std::make_unsigned_t<V>>(val) >= (static_cast<uint64_t>(1) << (ALN_LEFTOVERS + 16)), 0))
             throw std::runtime_error("val is too large to encode.");
         setval(val);
     }
     const T *get() const {
-#if !NDEBUG
-        const auto ptr = reinterpret_cast<const T *>((val_ & MASK) & ~ALN_MASK);
-        std::fprintf(stderr, "ptr: %p\n", (void *)ptr);
-#else
-        return reinterpret_cast<const T *>(((val_ >> ALN_LEFTOVERS) & MASK) << ALN_LEFTOVERS);
-#endif
+        return reinterpret_cast<const T *>((val_ & MASK) & ~ALN_MASK);
     }
     T       *get()       {
-#if !NDEBUG
-        auto ptr = reinterpret_cast<T *>((val_ & MASK) & ~ALN_MASK);
-        std::fprintf(stderr, "ptr: %p\n", (void *)ptr);
-#else
-        return reinterpret_cast<T *>(((val_ >> ALN_LEFTOVERS) & MASK) << ALN_LEFTOVERS);
-#endif
+        return reinterpret_cast<T *>((val_ & MASK) & ~ALN_MASK);
     }
     V        val() const {
         return V(val_ & ALN_MASK) | V(val_ >> (48 - ALN_LEFTOVERS));

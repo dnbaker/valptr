@@ -71,8 +71,6 @@ class valptr {
     DelFunctor func_;
 public:
     valptr(V val, T *ptr) {
-        std::fprintf(stderr, "ptr: %p\n", (void *)ptr);
-        std::fprintf(stderr, "ptr string: %s\n", ((std::string *)ptr)->data());
         val_ = reinterpret_cast<uint64_t>(ptr);
         assert((val_ & ALN_MASK) == 0);
         setval(val);
@@ -86,7 +84,7 @@ public:
         std::fprintf(stderr, "val before: %llx. zvmask: %llx\n", val_, ZERO_VAL_MASK);
 #endif
         val_ &= ~ZERO_VAL_MASK; // Set val bits to 0.
-        uint64_t val64 = static_cast<uint64_t>(val);
+        uint64_t val64 = (uint64_t)(val);
         if(val64)
             val_ |= ((val64 & ~ALN_MASK) << (48 - ALN_LEFTOVERS)) | (val64 & ALN_MASK);
     }
@@ -102,19 +100,16 @@ public:
         return reinterpret_cast<T *>((val_ & MASK) & ~ALN_MASK);
     }
     V        val() const {
-        return V(val_ & ALN_MASK) | V(val_ >> (48 - ALN_LEFTOVERS));
+        return V((val_ & ALN_MASK) | (val_ >> (48 - ALN_LEFTOVERS)));
     }
     ~valptr() {
         func_(get());
     }
 };
 
-#if 0
-template<typename T, typename V=std::uint32_t, typename DelFunctor=DeleteFunctor<T>, typename... Args>
-valptr<T, V, DelFunctor> make_unique(V val, Args &&... args) {
-    using RetType = valptr<T, V, DelFunctor>;
-    return RetType(val, new std::forward<Args>(args)...);
+template<typename T, typename V, typename DelFunctor=DeleteFunctor<T>, typename... Args>
+auto make_valptr(V val, Args &&... args) {
+    return valptr<T, V, DelFunctor>(val, new T(std::forward<Args>(args)...));
 }
-#endif
 
 } // namespace vpr

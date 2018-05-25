@@ -66,9 +66,8 @@ class valptr {
     static constexpr uint64_t MASK          = (static_cast<uint64_t>(1) << 48) - 1;
     static constexpr uint64_t ALN_MASK      = (static_cast<uint64_t>(1) << ALN_LEFTOVERS) - 1;
     static constexpr uint64_t ZERO_VAL_MASK = ~(MASK & ~ALN_MASK);
-
     uint64_t    val_;
-    DelFunctor func_;
+
 public:
     valptr(V val, T *ptr) {
         val_ = reinterpret_cast<uint64_t>(ptr);
@@ -99,13 +98,31 @@ public:
     T       *get()       {
         return reinterpret_cast<T *>((val_ & MASK) & ~ALN_MASK);
     }
+    T &operator*() {
+        return *this;
+    }
+    valptr(const valptr &other) = delete;
+    valptr(valptr &&other) {
+        if(std::addressof(other) == this) return;
+        val = other.val; other.val = 0;
+    }
+    const T &operator*() const {
+        return *this;
+    }
+    explicit operator T*() {
+        return this->get();
+    }
+    explicit operator const T*() const {
+        return this->get();
+    }
     V        val() const {
         return V((val_ & ALN_MASK) | (val_ >> (48 - ALN_LEFTOVERS)));
     }
     ~valptr() {
-        func_(get());
+        DelFunctor()(get());
     }
 };
+static_assert(sizeof(valptr<std::string, uint32_t>) == sizeof(uint64_t), "Functor must take no space.");
 
 template<typename T, typename V, typename DelFunctor=DeleteFunctor<T>, typename... Args>
 auto make_valptr(V val, Args &&... args) {

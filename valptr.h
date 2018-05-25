@@ -101,13 +101,14 @@ public:
     T &operator*() {
         return *this;
     }
-    valptr(const valptr &other) = delete;
-    valptr(valptr &&other) {
-        if(std::addressof(other) == this) return;
-        val = other.val; other.val = 0;
-    }
     const T &operator*() const {
         return *this;
+    }
+    T *operator->() {
+        return get();
+    }
+    const T *operator->() const {
+        return get();
     }
     explicit operator T*() {
         return this->get();
@@ -120,6 +121,11 @@ public:
     }
     ~valptr() {
         DelFunctor()(get());
+    }
+    valptr(const valptr &other) = delete;
+    valptr(valptr &&other) {
+        if(std::addressof(other) == this) return;
+        val = other.val; other.val = 0;
     }
 };
 static_assert(sizeof(valptr<std::string, uint32_t>) == sizeof(uint64_t), "Functor must take no space.");

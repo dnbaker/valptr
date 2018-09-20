@@ -78,7 +78,13 @@ public:
                      get(), MASK, ALN_LEFTOVERS, ZERO_VAL_MASK);
 #endif
     }
-    void setval(V val) {
+    T *setp(T *ptr) {
+        V v = val();
+        val_ = reinterpret_cast<uint64_t>(ptr);
+        setval(v);
+        return ptr;
+    }
+    V setval(V val) {
 #if !NDEBUG
         std::fprintf(stderr, "val before: %llx. zvmask: %llx\n", val_, ZERO_VAL_MASK);
 #endif
@@ -86,6 +92,7 @@ public:
         uint64_t val64 = (uint64_t)(val);
         if(val64)
             val_ |= ((val64 & ~ALN_MASK) << (48 - ALN_LEFTOVERS)) | (val64 & ALN_MASK);
+        return val;
     }
     void setvalcheck(V val) {
         if(__builtin_expect(static_cast<std::make_unsigned_t<V>>(val) >= (static_cast<uint64_t>(1) << (ALN_LEFTOVERS + 16)), 0))

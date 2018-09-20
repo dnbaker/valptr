@@ -73,8 +73,9 @@ public:
         val_ = reinterpret_cast<uint64_t>(ptr);
         assert((val_ & ALN_MASK) == 0);
         setval(val);
+        assert(val == this->val());
 #if !NDEBUG
-        std::fprintf(stderr, "ptr after insertiOn: %p. MASK: %llx. LEFTOVERS: %u. ZERO_VAL_MASK: %llx\n",
+        std::fprintf(stderr, "ptr after insertion: %p. MASK: %llx. LEFTOVERS: %u. ZERO_VAL_MASK: %llx\n",
                      get(), MASK, ALN_LEFTOVERS, ZERO_VAL_MASK);
 #endif
     }
@@ -82,6 +83,7 @@ public:
         V v = val();
         val_ = reinterpret_cast<uint64_t>(ptr);
         setval(v);
+        assert(get() == ptr);
         return ptr;
     }
     V setval(V val) {
@@ -89,6 +91,7 @@ public:
         std::fprintf(stderr, "val before: %llx. zvmask: %llx\n", val_, ZERO_VAL_MASK);
 #endif
         val_ &= ~ZERO_VAL_MASK; // Set val bits to 0.
+        assert(this->val() == 0);
         uint64_t val64 = (uint64_t)(val);
         if(val64)
             val_ |= ((val64 & ~ALN_MASK) << (48 - ALN_LEFTOVERS)) | (val64 & ALN_MASK);
@@ -124,7 +127,7 @@ public:
         return this->get();
     }
     V        val() const {
-        return V((val_ & ALN_MASK) | (val_ >> (48 - ALN_LEFTOVERS)));
+        return V((val_ & ALN_MASK) | ((val_ & ~MASK) >> (48 - ALN_LEFTOVERS)));
     }
     ~valptr() {
         DelFunctor()(get());
@@ -132,7 +135,7 @@ public:
     valptr(const valptr &other) = delete;
     valptr(valptr &&other) {
         if(std::addressof(other) == this) return;
-        val = other.val; other.val = 0;
+        val_ = other.val_; other.val_ = 0;
     }
 };
 static_assert(sizeof(valptr<std::string, uint32_t>) == sizeof(uint64_t), "Functor must take no space.");
